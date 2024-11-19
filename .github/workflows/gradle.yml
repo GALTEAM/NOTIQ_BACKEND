@@ -20,8 +20,8 @@ jobs:
       - name: make application.yml
         run: |
           cd ./src/main/resources
-          touch ./application.yml
-          echo "${{ secrets.APPLICATION_PROD }}" > ./application.yml
+          touch ./application-prod.yml
+          echo "${{ secrets.APPLICATION_PROD }}" > ./application-prod.yml
 
       - name: set chmod
         run: chmod +x ./gradlew
