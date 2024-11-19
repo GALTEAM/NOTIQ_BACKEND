@@ -1,6 +1,7 @@
 package com.gal.notiq.domain.user.domain.mapper
 
 import com.gal.notiq.domain.user.domain.entity.UserEntity
+import com.gal.notiq.domain.user.domain.enums.UserRoles
 import com.gal.notiq.domain.user.domain.model.User
 import com.gal.notiq.global.common.Mapper
 import com.gal.notiq.domain.user.presentation.dto.request.RegisterUserRequest
@@ -28,7 +29,10 @@ class UserMapper(
         )
     }
 
-    fun toDomain(registerUserRequest: RegisterUserRequest, password: String): User {
+    fun toDomain(
+        registerUserRequest: RegisterUserRequest,
+        password: String
+    ): User {
         return User(
             username = registerUserRequest.username,
             name = registerUserRequest.name,

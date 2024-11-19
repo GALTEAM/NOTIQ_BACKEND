@@ -5,6 +5,7 @@ import com.gal.notiq.global.auth.jwt.JwtUtils
 import com.gal.notiq.global.auth.jwt.JwtAuthenticationFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -47,6 +48,12 @@ class SecurityConfig (
             .authorizeHttpRequests {
                 it
                     .requestMatchers("/user/**").permitAll()
+                    .requestMatchers("/my").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST,"/evaluation").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers("/evaluation/{id}/**").hasAuthority("ROLE_USER")
+                    .requestMatchers(HttpMethod.POST,"/disagree/").hasAuthority("ROLE_USER")
+                    .requestMatchers(HttpMethod.GET,"/disagree/{evaluationId}").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers("/temp-score/{id}").hasAuthority("ROLE_USER")
                     .anyRequest().authenticated()
             }
 

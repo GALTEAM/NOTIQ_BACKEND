@@ -6,6 +6,8 @@ import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.domain.user.presentation.dto.request.LoginRequest
 import com.gal.notiq.domain.user.presentation.dto.request.RefreshRequest
 import com.gal.notiq.domain.user.presentation.dto.request.RegisterUserRequest
+import com.gal.notiq.domain.user.presentation.dto.response.GetMyInfoResponse
+import com.gal.notiq.global.auth.UserSessionHolder
 import com.gal.notiq.global.auth.jwt.JwtInfo
 import com.gal.notiq.global.auth.jwt.JwtUtils
 import com.gal.notiq.global.auth.jwt.exception.JwtErrorCode
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UserServiceImpl(
     private val userRepository: UserRepository,
+    private val userSessionHolder: UserSessionHolder,
     private val userMapper: UserMapper,
     private val bytePasswordEncoder: BCryptPasswordEncoder,
     private val jwtUtils: JwtUtils
@@ -46,7 +49,7 @@ class UserServiceImpl(
 
         val user = userRepository.findByUsername(loginRequest.username)?: throw CustomException(UserErrorCode.USER_NOT_FOUND)
 
-        if (bytePasswordEncoder.matches(user.password, loginRequest.password)) throw CustomException(UserErrorCode.USER_NOT_MATCH)
+        if (bytePasswordEncoder.matches(loginRequest.password,user.password)) throw CustomException(UserErrorCode.USER_NOT_MATCH)
 
         return BaseResponse(
             message = "로그인 성공",
@@ -74,6 +77,16 @@ class UserServiceImpl(
             data = jwtUtils.refreshToken(
                 user = userMapper.toDomain(user!!)
             )
+        )
+    }
+
+    override fun getMyInfo(): BaseResponse<GetMyInfoResponse> {
+        val user = userSessionHolder.getCurrentUser()
+        val res = GetMyInfoResponse.of(user)
+
+        return BaseResponse (
+            message = "유저 정보 조회",
+            data = res
         )
     }
 }
