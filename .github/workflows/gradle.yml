@@ -35,8 +35,8 @@ jobs:
       - name: Docker build & push to prod
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notiQ:0.0.1-SNAPSHOT .
-          docker push ${{ secrets.DOCKER_USERNAME }}/notiQ:0.0.1-SNAPSHOT
+          docker build -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT .
+          docker push ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
 
       - name: Deploy to prod
         uses: appleboy/ssh-action@master
@@ -47,9 +47,9 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }} # EC2 private key
           envs: GITHUB_SHA
           script: |
-            docker stop notiQ
-            docker rm notiQ
-            docker rmi ${{ secrets.DOCKER_USERNAME }}/notiQ:0.0.1-SNAPSHOT
-            docker pull ${{ secrets.DOCKER_USERNAME }}/notiQ:0.0.1-SNAPSHOT
-            docker run -d -p 80:8080 --name notiQ ${{ secrets.DOCKER_USERNAME }}/notiQ:0.0.1-SNAPSHOT
+            docker stop notiq
+            docker rm notiq
+            docker rmi ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
+            docker pull ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
+            docker run -d -p 80:8080 --name notiq ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
             
