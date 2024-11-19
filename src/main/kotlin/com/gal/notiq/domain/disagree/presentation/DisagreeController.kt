@@ -4,12 +4,8 @@ import com.gal.notiq.domain.disagree.presentation.dto.request.RegisterDisagreeRe
 import com.gal.notiq.domain.disagree.presentation.dto.response.GetDisagreesResponse
 import com.gal.notiq.domain.disagree.service.DisagreeService
 import com.gal.notiq.global.common.BaseResponse
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.v3.oas.annotations.Operation
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/disagree")
@@ -18,11 +14,13 @@ class DisagreeController(
 ) {
 
     @PostMapping("/{evaluationId}")
+    @Operation(summary = "이의 등록", description = "이의 등록(user)")
     fun registerDisagree(@PathVariable("evaluationId") id:Long,@RequestBody request:RegisterDisagreeRequest):BaseResponse<Unit>{
         return disagreeService.registerDisagree(id,request)
     }
 
     @GetMapping("/{evaluationId}")
+    @Operation(summary = "이의 제기 조회", description = "평가ID로 등록된 이의제기 리스트 조회 (admin)")
     fun getDisagrees(@PathVariable evaluationId:Long):BaseResponse<List<GetDisagreesResponse>> {
         return disagreeService.getDisagrees(evaluationId)
     }
