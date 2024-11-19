@@ -21,15 +21,14 @@ class JwtAuthenticationFilter(
         filterChain: FilterChain
     ) {
         val token: String? = request.getHeader("Authorization")
-        val path: String = request.servletPath
+//        val path: String = request.servletPath
 
-        if (path.startsWith("/user/")
-        ) {
+        if (token.isNullOrEmpty()) {
             filterChain.doFilter(request, response)
             return
         }
 
-        if (token.isNullOrEmpty() || !token.startsWith("Bearer ")) {
+        if (!token.startsWith("Bearer ")) {
             setErrorResponse(response, JwtErrorCode.JWT_EMPTY_EXCEPTION)
         } else {
             when (jwtUtils.checkTokenInfo(jwtUtils.getToken(token))) {

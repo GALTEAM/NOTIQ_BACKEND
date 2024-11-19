@@ -48,14 +48,17 @@ class SecurityConfig (
             .authorizeHttpRequests {
                 it
                     .requestMatchers("/user/**").permitAll()
-                    .requestMatchers("/my").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers("/user/my").authenticated()
+                    .requestMatchers("/evaluation/my").hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.POST,"/evaluation").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.GET,"/evaluation").authenticated()
                     .requestMatchers("/evaluation/{id}/**").hasAuthority("ROLE_USER")
                     .requestMatchers(HttpMethod.POST,"/disagree/").hasAuthority("ROLE_USER")
                     .requestMatchers(HttpMethod.GET,"/disagree/{evaluationId}").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.GET,"/temp-score").authenticated()
                     .requestMatchers("/temp-score/{id}").hasAuthority("ROLE_USER")
                     .requestMatchers("/swagger-ui/**", "/v3/**").permitAll()
-                    .anyRequest().authenticated()
+                    .anyRequest().permitAll()
             }
 
             .addFilterBefore(JwtAuthenticationFilter(jwtUtils, objectMapper), UsernamePasswordAuthenticationFilter::class.java)
