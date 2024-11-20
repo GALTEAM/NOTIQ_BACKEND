@@ -5,9 +5,12 @@ import com.gal.notiq.domain.disagree.domain.entity.DisagreeEntity
 import com.gal.notiq.domain.disagree.presentation.dto.request.RegisterDisagreeRequest
 import com.gal.notiq.domain.disagree.presentation.dto.response.GetDisagreesResponse
 import com.gal.notiq.domain.evaluation.domain.EvaluationRepository
+import com.gal.notiq.domain.evaluation.exception.EvaluationErrorCode
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
 import com.gal.notiq.global.auth.UserSessionHolder
 import com.gal.notiq.global.common.BaseResponse
+import com.gal.notiq.global.exception.CustomException
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,7 +24,9 @@ class DisagreeService (
 ){
     fun registerDisagree(id:Long,request: RegisterDisagreeRequest): BaseResponse<Unit> {
         val userEntity = userMapper.toEntity(userSessionHolder.getCurrentUser())
-        val evaluationEntity = evaluationRepository.findById(id).orElse(null)
+        val evaluationEntity = evaluationRepository.findById(id).orElseThrow { throw (CustomException(
+            EvaluationErrorCode.EVALUATION_NOT_FOUND
+        )) }
         disagreeRepository.save(
             DisagreeEntity(
             comment = request.comment,

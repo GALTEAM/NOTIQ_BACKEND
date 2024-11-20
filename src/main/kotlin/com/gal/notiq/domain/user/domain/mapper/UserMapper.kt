@@ -14,6 +14,10 @@ class UserMapper(
         return User(
             id = entity.id,
             username = entity.username,
+            name = entity.name,
+            grade = entity.grade,
+            cls = entity.cls,
+            num = entity.num,
             password = entity.password,
             role = entity.role
         )

@@ -6,6 +6,7 @@ import com.gal.notiq.domain.evaluation.domain.entity.mongo.TempScoreEntity
 import com.gal.notiq.domain.score.presentation.dto.response.GetTempScoresResponse
 import com.gal.notiq.domain.score.presentation.dto.request.GetTempScoresRequest
 import com.gal.notiq.domain.score.presentation.dto.request.RegisterTempScoreRequest
+import com.gal.notiq.domain.score.presentation.dto.request.RegisterTempScoresRequest
 import com.gal.notiq.domain.score.presentation.dto.response.GetAnswerResponse
 import com.gal.notiq.domain.score.presentation.dto.response.RegisterTempScoreResponse
 import com.gal.notiq.global.auth.UserSessionHolder
@@ -56,13 +57,13 @@ class TempScoreService(
         return secondaryMongoTemplate.find(query, MongoAnswerEntity::class.java,collectionName)
     }
 
-    fun registerTempScore(id: Long, requests: List<RegisterTempScoreRequest>): BaseResponse<RegisterTempScoreResponse> {
+    fun registerTempScore(id: Long, requests: RegisterTempScoresRequest): BaseResponse<RegisterTempScoreResponse> {
         val collectionName = answerRepository.findById(id).orElse(null).title
         val correctAnswers = findAnswerByCollectionName(collectionName)
-        val tempScore = compareScore(correctAnswers,requests)
+        val tempScore = compareScore(correctAnswers,requests.list)
         val username = userSessionHolder.getCurrentUser().username
 
-        secondaryMongoTemplate.save(TempScoreEntity(username = username,answers = requests, tempScore = tempScore),collectionName);
+        secondaryMongoTemplate.save(TempScoreEntity(username = username,answers = requests.list, tempScore = tempScore),collectionName);
 
         return BaseResponse(
             message = "가채점 성공",

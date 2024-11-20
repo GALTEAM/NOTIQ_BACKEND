@@ -12,14 +12,14 @@ data class DisagreeEntity (
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null, // ID (PK)
 
-    val comment:String,
+    val comment:String = "",
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_member_id")
-    val userEntity: UserEntity,
+    val userEntity: UserEntity? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_evaluation_id")
-    val evaluationEntity: EvaluationEntity
+    val evaluationEntity: EvaluationEntity? = null
 
     )

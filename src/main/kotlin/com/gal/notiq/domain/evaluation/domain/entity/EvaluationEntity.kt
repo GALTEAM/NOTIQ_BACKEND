@@ -28,7 +28,7 @@ class EvaluationEntity (
     val term: Int = 0,
 
     @CreatedDate  // 생성일
-    val createdDate: LocalDateTime? = LocalDateTime.now(ZoneId.of("Asia/Seoul")),
+    val createdDate: LocalDateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul")),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_member_id")

@@ -1,6 +1,5 @@
 package com.gal.notiq.domain.evaluation.domain
 
-import com.gal.notiq.domain.evaluation.domain.entity.AnswerEntity
 import com.gal.notiq.domain.evaluation.domain.entity.EvaluationEntity
 import com.gal.notiq.domain.user.domain.entity.UserEntity
 import org.springframework.data.jpa.repository.JpaRepository

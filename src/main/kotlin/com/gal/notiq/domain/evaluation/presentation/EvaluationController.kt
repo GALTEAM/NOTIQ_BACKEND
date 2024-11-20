@@ -40,7 +40,7 @@ class EvaluationController(
 
     @GetMapping("")
     @Operation(summary = "평가 리스트 조회", description = "평가 리스트 조회 , 기본조회는 다 null로(admin)")
-    fun getEvaluations(@RequestBody request: GetEvaluationsRequest,
+    fun getEvaluations(@ModelAttribute request: GetEvaluationsRequest,
                        ): BaseResponse<List<GetEvaluationsResponse>> {
         return evaluationService.getEvaluations(request)
     }

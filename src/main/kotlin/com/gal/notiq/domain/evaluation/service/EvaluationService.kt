@@ -14,6 +14,7 @@ import com.gal.notiq.domain.score.presentation.dto.response.GetMyExamResultRespo
 import com.gal.notiq.domain.score.service.TempScoreService
 import com.gal.notiq.domain.user.domain.entity.UserEntity
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
+import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.global.auth.UserSessionHolder
 import com.gal.notiq.global.common.BaseResponse
 import com.gal.notiq.global.exception.CustomException
@@ -25,6 +26,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import java.util.*
 
 
 @Service
@@ -161,7 +163,7 @@ class EvaluationService(
                 var result: Double
                 for (rowIndex in 1 until scoreSheet.physicalNumberOfRows) {
                     // 추출하기
-                    try {
+//                    try {
                         val row = scoreSheet.getRow(rowIndex)
 
                         if (rowIndex == 1) {
@@ -177,12 +179,14 @@ class EvaluationService(
                                 result = result
                             )
 
+                            println("여기 존재")
                             // mongoDB에 저장
                             mongoTemplate.save(entity, collectionName)
+                            println("통과")
                         }
-                    } catch (e: Throwable) {
-                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
-                    }
+//                    } catch (e: Throwable) {
+//                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
+//                    }
                 }
                 for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
                     var num: Int
@@ -228,7 +232,9 @@ class EvaluationService(
     }
 
     fun getEvaluations(request:GetEvaluationsRequest): BaseResponse<List<GetEvaluationsResponse>> { // 평가 리스트 받기
-        val res = GetEvaluationsResponse.of(evaluationRepository.findAllByYearAndTermAndKeyword(request.year, request.term,request.keyword))
+        val entity:List<EvaluationEntity> = evaluationRepository.findAllByYearAndTermAndKeyword(request.year, request.term,request.keyword)
+        println(entity)
+        val res = GetEvaluationsResponse.of(entity)
 
         return BaseResponse(
             message = "평가 리스트 조회 성공",
@@ -237,23 +243,27 @@ class EvaluationService(
     }
 
     fun getMyExamResult(id:Long): BaseResponse<GetMyExamResultResponse> {
-        val collectionName = answerRepository.findById(id).orElse(null).title
-        val correctAnswers = tempScoreService.findAnswerByCollectionName(collectionName)
-        val user = userSessionHolder.getCurrentUser()
-        val myTempScore = tempScoreService.findAnswerByUsername(collectionName,user.username)
-        val myScore = findMyScore(user.grade,user.cls,user.num,collectionName);
+        val collectionName = evaluationRepository.findById(id)
+        if(collectionName.isPresent){
+            val collectionName = collectionName.get().title
+            val correctAnswers = tempScoreService.findAnswerByCollectionName(collectionName)
+            val user = userSessionHolder.getCurrentUser()
+            val myTempScore = tempScoreService.findAnswerByUsername(collectionName,user.username)
+            val myScore = findMyScore(user.grade,user.cls,user.num,collectionName);
 
-        val res = GetMyExamResultResponse(
-            correctAnswers = correctAnswers,
-            myAnswers = myTempScore?.answers,
-            score = myScore?.result,
-            tempScore = myTempScore?.tempScore
-        )
+            val res = GetMyExamResultResponse(
+                correctAnswers = correctAnswers,
+                myAnswers = myTempScore?.answers,
+                score = myScore?.result,
+                tempScore = myTempScore?.tempScore
+            )
 
-        return BaseResponse(
-            message = "지필평가 결과 조회 성공",
-            data = res
-        )
+            return BaseResponse(
+                message = "지필평가 결과 조회 성공",
+                data = res
+            )
+        }
+        throw CustomException(EvaluationErrorCode.EVALUATION_NOT_FOUND)
     }
 
     fun findMyScore(grade:Int,cls:Int,num:Int,collectionName:String): ExamResultEntity? {
@@ -267,13 +277,17 @@ class EvaluationService(
     }
 
     fun getMyContestResult(id:Long): BaseResponse<List<ContestResultEntity>> {
-        val collectionName = answerRepository.findById(id).orElse(null).title
-        val res = findContestResult(collectionName)
+        val evaluation = evaluationRepository.findById(id)
+        if(evaluation.isPresent){
+            val collectionName = evaluation.get().title
+            val res = findContestResult(collectionName)
 
-        return BaseResponse(
-            message = "대회 결과 조회 성공",
-            data = res
-        )
+            return BaseResponse(
+                message = "대회 결과 조회 성공",
+                data = res
+            )
+        }
+        throw CustomException(EvaluationErrorCode.EVALUATION_NOT_FOUND)
     }
 
     private fun findContestResult(collectionName: String): List<ContestResultEntity>? {
@@ -282,29 +296,34 @@ class EvaluationService(
     }
 
     fun getMyResult(id: Long): BaseResponse<GetMyResultResponse> {
-        val collectionName = answerRepository.findById(id).orElse(null).title
-        val user = userSessionHolder.getCurrentUser()
+        val evaluation = evaluationRepository.findById(id)
+        if(evaluation.isPresent){
+            val collectionName = evaluation.get().title
 
-        val menu = findMenu(collectionName)
-        val myResult = findMyResult(user.grade,user.cls,user.num,collectionName)
+            val user = userSessionHolder.getCurrentUser()
 
-        val res = GetMyResultResponse(
-            menu = menu?.value,
-            myResult = myResult?.value
-        )
+            val menu = findMenu(collectionName)
+            val myResult = findMyResult(user.grade,user.cls,user.num,collectionName)
 
-        return BaseResponse(
-            message = "기타 결과 조회 성공",
-            data = res
-        )
+            val res = GetMyResultResponse(
+                menu = menu?.value,
+                myResult = myResult?.value
+            )
+
+            return BaseResponse(
+                message = "기타 결과 조회 성공",
+                data = res
+            )
+        }
+        throw CustomException(EvaluationErrorCode.EVALUATION_NOT_FOUND)
     }
 
     private fun findMyResult(grade:Int,cls:Int,num:Int,collectionName: String): EtcResultEntity? {
         val query = Query()
 
-        query.addCriteria(Criteria.where("grade").`is`(grade))
-        query.addCriteria(Criteria.where("cls").`is`(cls))
-        query.addCriteria(Criteria.where("num").`is`(num))
+        query.addCriteria(Criteria.where("grade").`is`(grade.toString()))
+        query.addCriteria(Criteria.where("cls").`is`(cls.toString()))
+        query.addCriteria(Criteria.where("num").`is`(num.toString()))
 
         return mongoTemplate.findOne(query, EtcResultEntity::class.java,collectionName)
     }

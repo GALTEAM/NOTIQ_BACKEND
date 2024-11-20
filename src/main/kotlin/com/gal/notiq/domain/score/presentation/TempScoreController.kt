@@ -4,6 +4,7 @@ import com.gal.notiq.domain.score.presentation.dto.response.GetTempScoresRespons
 import com.gal.notiq.domain.score.service.TempScoreService
 import com.gal.notiq.domain.score.presentation.dto.request.GetTempScoresRequest
 import com.gal.notiq.domain.score.presentation.dto.request.RegisterTempScoreRequest
+import com.gal.notiq.domain.score.presentation.dto.request.RegisterTempScoresRequest
 import com.gal.notiq.domain.score.presentation.dto.response.GetAnswerResponse
 import com.gal.notiq.domain.score.presentation.dto.response.RegisterTempScoreResponse
 import com.gal.notiq.global.common.BaseResponse
@@ -32,7 +33,8 @@ class TempScoreController(
     @Operation(summary = "가채점", description = "가채점한 점수를 저장한 후 반환")
     fun registerTempScore(
         @PathVariable("id") id:Long,
-        @RequestBody request:List<RegisterTempScoreRequest>):BaseResponse<RegisterTempScoreResponse>{
+        @RequestBody request: RegisterTempScoresRequest):BaseResponse<RegisterTempScoreResponse>{
+        println("entered")
         return tempScoreService.registerTempScore(id,request);
     }
 
