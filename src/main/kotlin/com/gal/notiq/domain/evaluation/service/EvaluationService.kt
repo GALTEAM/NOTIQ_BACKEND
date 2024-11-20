@@ -76,7 +76,9 @@ class EvaluationService(
                     result = result,
                     winner = winner)
                 mongoTemplate.save(entity,collectionName)
-            } catch (e: Throwable) { e.printStackTrace() }
+            } catch (e: Throwable) {
+                throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
+            }
         }
         evaluationRepository.save(
             EvaluationEntity(
@@ -179,7 +181,7 @@ class EvaluationService(
                             mongoTemplate.save(entity, collectionName)
                         }
                     } catch (e: Throwable) {
-                        e.printStackTrace()
+                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
                     }
                 }
                 for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
@@ -198,11 +200,10 @@ class EvaluationService(
                         // mongoDB에 저장
                         secondaryMongoTemplate.save(entity, collectionName)
                     } catch (e: Throwable) {
-                        e.printStackTrace()
+                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
                     }
                 }
             }
-            println(user.id)
             evaluationRepository.save(
                 EvaluationEntity(
                     title = collectionName,
@@ -221,7 +222,7 @@ class EvaluationService(
                 )
             )
         }else {
-            throw Exception("가채점표를 올려야 합니다.")
+            throw CustomException(EvaluationErrorCode.ANSWER_NOT_FOUND) //"가채점표를 올려야 합니다."
         }
 
     }
