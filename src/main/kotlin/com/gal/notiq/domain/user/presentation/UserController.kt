@@ -32,8 +32,9 @@ class UserController(
     fun refreshUser(@RequestBody refreshRequest: RefreshRequest): BaseResponse<String> {
         return userService.refreshToken(refreshRequest)
     }
+
     @GetMapping("/my")
     fun getMyInfo(): BaseResponse<GetMyInfoResponse> {
-        return userService.getMyInfo();
+        return userService.getMyInfo()
     }
 }

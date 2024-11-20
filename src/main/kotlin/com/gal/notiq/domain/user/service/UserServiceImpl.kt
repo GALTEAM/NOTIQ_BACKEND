@@ -1,6 +1,7 @@
 package com.gal.notiq.domain.user.service
 
 import com.gal.notiq.domain.user.domain.UserRepository
+import com.gal.notiq.domain.user.domain.entity.UserEntity
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
 import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.domain.user.presentation.dto.request.LoginRequest
@@ -29,7 +30,6 @@ class UserServiceImpl(
 
     @Transactional
     override fun registerUser(registerUserRequest: RegisterUserRequest): BaseResponse<Unit> {
-
         if(userRepository.existsByUsername(registerUserRequest.username) || userRepository.existsByGradeAndClsAndNum(registerUserRequest.grade,registerUserRequest.cls,registerUserRequest.num)) throw CustomException(UserErrorCode.USER_ALREADY_EXIST)
 
         userRepository.save(
@@ -46,18 +46,14 @@ class UserServiceImpl(
 
     @Transactional(readOnly = true)
     override fun loginUser(loginRequest: LoginRequest): BaseResponse<JwtInfo> {
-
-        val user = userRepository.findByUsername(loginRequest.username)?: throw CustomException(UserErrorCode.USER_NOT_FOUND)
-
-        if (bytePasswordEncoder.matches(loginRequest.password,user.password)) throw CustomException(UserErrorCode.USER_NOT_MATCH)
-
+        val user:UserEntity = userRepository.findByUsername(loginRequest.username)?: throw CustomException(UserErrorCode.USER_NOT_FOUND)
+        if (!bytePasswordEncoder.matches(loginRequest.password,user.password)) throw CustomException(UserErrorCode.USER_NOT_MATCH)
         return BaseResponse(
             message = "로그인 성공",
             data = jwtUtils.generate(
                 user = userMapper.toDomain(user)
             )
         )
-
     }
 
     @Transactional(readOnly = true)
@@ -67,6 +63,8 @@ class UserServiceImpl(
         if (jwtUtils.checkTokenInfo(token) == JwtErrorType.ExpiredJwtException) {
             throw CustomException(JwtErrorCode.JWT_TOKEN_EXPIRED)
         }
+
+        // refresh 인지 확인
 
         val user = userRepository.findByUsername(
             jwtUtils.getUsername(token)
