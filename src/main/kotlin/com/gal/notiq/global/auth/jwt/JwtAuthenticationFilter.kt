@@ -1,9 +1,13 @@
 package com.gal.notiq.global.auth.jwt
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.gal.notiq.domain.evaluation.exception.EvaluationErrorCode
+import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.global.auth.jwt.exception.JwtErrorCode
 import com.gal.notiq.global.auth.jwt.exception.type.JwtErrorType
 import com.gal.notiq.global.common.BaseResponse
+import com.gal.notiq.global.exception.CustomErrorCode
+import com.gal.notiq.global.exception.CustomException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -33,8 +37,12 @@ class JwtAuthenticationFilter(
         } else {
             when (jwtUtils.checkTokenInfo(jwtUtils.getToken(token))) {
                 JwtErrorType.OK -> {
-                    SecurityContextHolder.getContext().authentication = jwtUtils.getAuthentication(token)
-                    doFilter(request, response, filterChain)
+                    try{
+                        SecurityContextHolder.getContext().authentication = jwtUtils.getAuthentication(token)
+                        doFilter(request, response, filterChain)
+                    } catch(e: CustomException){
+                        setErrorResponse(response, UserErrorCode.USER_NOT_FOUND)
+                    }
                 }
 
                 JwtErrorType.ExpiredJwtException -> setErrorResponse(response, JwtErrorCode.JWT_TOKEN_EXPIRED)
@@ -55,9 +63,10 @@ class JwtAuthenticationFilter(
         }
     }
 
+    // error 이거 쓰지 말고 filter로 바꾸던가 JwtErrorCode를 따로 받던가
     private fun setErrorResponse(
         response: HttpServletResponse,
-        errorCode: JwtErrorCode
+        errorCode: CustomErrorCode
     ) {
         response.status = errorCode.status.value()
         response.contentType = "application/json;charset=UTF-8"

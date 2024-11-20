@@ -8,8 +8,6 @@ import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.UnsupportedJwtException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.stereotype.Component
 import java.nio.charset.StandardCharsets
 import java.security.SignatureException
@@ -20,7 +18,7 @@ import javax.crypto.spec.SecretKeySpec
 @Component
 class JwtUtils(
     private val jwtProperties: JwtProperties,
-    private val userDetailsService: UserDetailsService,
+    private val jwtUserDetailsService: JwtUserDetailsService
 ) {
 
     private val secretKey: SecretKey = SecretKeySpec(
@@ -73,8 +71,9 @@ class JwtUtils(
     }
 
     fun getAuthentication(token: String): Authentication {
-        val userDetails: UserDetails = userDetailsService.loadUserByUsername(getUsername(getToken(token)))
-        return UsernamePasswordAuthenticationToken(userDetails, null, userDetails.authorities)
+        // 없는 유저 입니다. 에러 처리
+        val user = jwtUserDetailsService.loadUserByUsername(getUsername(getToken(token)))
+        return UsernamePasswordAuthenticationToken(user, null, user.authorities)
     }
 
     fun refreshToken(user: User): String {

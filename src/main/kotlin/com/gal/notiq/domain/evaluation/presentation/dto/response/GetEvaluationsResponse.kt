@@ -11,7 +11,7 @@ data class GetEvaluationsResponse(
     val term:Int,
     val category: EvaluationType,
     val lastModifiedDate: LocalDateTime?,
-    val name: String
+    val name: String?
 ) {
     companion object {
         fun of(evaluationEntities: List<EvaluationEntity>): List<GetEvaluationsResponse> {
@@ -22,8 +22,8 @@ data class GetEvaluationsResponse(
                     year = entity.year,
                     term = entity.term,
                     category = entity.category,
-                    lastModifiedDate = entity.lastModifiedDate,
-                    name = entity.userEntity.name
+                    lastModifiedDate = entity.createdDate,
+                    name = entity.userEntity?.name
                 )
             }
         }

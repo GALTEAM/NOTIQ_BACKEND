@@ -9,7 +9,7 @@ data class GetTempScoresResponse(
     val year:Int,
     val term:Int,
     val lastModifiedDate: LocalDateTime?,
-    val name: String
+    val name: String?
 ) {
     companion object {
         fun of(answerEntities: List<AnswerEntity>): List<GetTempScoresResponse> {
@@ -19,8 +19,8 @@ data class GetTempScoresResponse(
                     title = entity.title,
                     year = entity.year,
                     term = entity.term,
-                    lastModifiedDate = entity.lastModifiedDate,
-                    name = entity.userEntity.name
+                    lastModifiedDate = entity.createdDate,
+                    name = entity.userEntity?.name
                 )
             }
         }

@@ -10,6 +10,7 @@ import com.gal.notiq.domain.score.presentation.dto.response.GetMyExamResultRespo
 import com.gal.notiq.global.common.BaseResponse
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -32,7 +33,7 @@ class EvaluationController(
 
     @PostMapping("")
     @Operation(summary = "평가 등록", description = "평가 등록 (admin)")
-    fun registerEvaluation(@RequestBody request:RegisterEvaluationRequest,
+    fun registerEvaluation(@ModelAttribute request:RegisterEvaluationRequest,
                            @RequestParam file:MultipartFile): BaseResponse<Unit> {
         return evaluationService.register(request,file)
     }

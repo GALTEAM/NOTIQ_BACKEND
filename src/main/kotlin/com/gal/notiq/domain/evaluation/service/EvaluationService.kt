@@ -5,6 +5,7 @@ import com.gal.notiq.domain.evaluation.domain.entity.AnswerEntity
 import com.gal.notiq.domain.evaluation.domain.entity.EvaluationEntity
 import com.gal.notiq.domain.evaluation.domain.entity.mongo.*
 import com.gal.notiq.domain.evaluation.domain.enums.EvaluationType
+import com.gal.notiq.domain.evaluation.exception.EvaluationErrorCode
 import com.gal.notiq.domain.evaluation.presentation.dto.request.GetEvaluationsRequest
 import com.gal.notiq.domain.evaluation.presentation.dto.request.RegisterEvaluationRequest
 import com.gal.notiq.domain.evaluation.presentation.dto.response.GetEvaluationsResponse
@@ -15,6 +16,7 @@ import com.gal.notiq.domain.user.domain.entity.UserEntity
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
 import com.gal.notiq.global.auth.UserSessionHolder
 import com.gal.notiq.global.common.BaseResponse
+import com.gal.notiq.global.exception.CustomException
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -38,8 +40,9 @@ class EvaluationService(
 ) {
     fun register(request:RegisterEvaluationRequest, file:MultipartFile): BaseResponse<Unit> {
         // 1. 이미 있는 평가인지 확인
-
         val collectionName:String = request.evaluationName;
+        if(evaluationRepository.existsByTitle(collectionName)) throw CustomException(EvaluationErrorCode.EVALUATION_ALREADY_EXIST)
+
         val year:Int = request.year
         val term:Int = request.term
 
@@ -58,7 +61,7 @@ class EvaluationService(
     private fun registerContest(collectionName: String, year: Int, term: Int, file: MultipartFile) {
         val workbook = XSSFWorkbook(file.inputStream)
         val sheet = workbook.getSheet("대회결과")
-        val user:UserEntity = userMapper.toEntity(userSessionHolder.getCurrentUser());
+        val user:UserEntity = userMapper.toEntity(userSessionHolder.getCurrentUser())
 
         var result: String
         var winner: String
@@ -66,26 +69,23 @@ class EvaluationService(
             try {
                 val row = sheet.getRow(rowIndex)
 
-                if (rowIndex == 1) {
-                    result = row.getCell(0).stringCellValue
-                    winner = row.getCell(1).stringCellValue
+                result = row.getCell(0).stringCellValue
+                winner = row.getCell(1).stringCellValue
 
-                    val entity = ContestResultEntity(
-                        result = result,
-                        winner = winner)
-                    mongoTemplate.save(entity,collectionName)
-                    evaluationRepository.save(
-                        EvaluationEntity(
-                        title = collectionName,
-                        year = year,
-                        category = EvaluationType.CONTEST,
-                        term = term,
-                        userEntity = user
-                    )
-                    )
-                }
+                val entity = ContestResultEntity(
+                    result = result,
+                    winner = winner)
+                mongoTemplate.save(entity,collectionName)
             } catch (e: Throwable) { e.printStackTrace() }
         }
+        evaluationRepository.save(
+            EvaluationEntity(
+                title = collectionName,
+                year = year,
+                category = EvaluationType.CONTEST,
+                term = term,
+                userEntity = user)
+        )
     }
 
     private fun registerEtc(collectionName: String, year: Int, term: Int, file: MultipartFile) {
@@ -97,20 +97,30 @@ class EvaluationService(
             var grade: String
             var cls: String
             var num: String
-            var rowCnt: Int
+            val rowCnt:Int = sheet.getRow(1).getCell(0).numericCellValue.toInt()
+            println(rowCnt)
 
             for (i in 0..sheet.lastRowNum) { // i <= sheet.getLastRowNum()와 동일
                 val row = sheet.getRow(i)
                 if (row != null) {
-                    grade = row.getCell(0).stringCellValue// 첫 번째 셀 (학년)
-                    cls = row.getCell(1).stringCellValue   // 두 번째 셀 (반)
-                    num = row.getCell(2).stringCellValue   // 세 번째 셀 (번호)
-                    rowCnt = Integer.parseInt(row.getCell(3).stringCellValue) // 네번째 셀 (열의 수)
+                    if(i == 0){
+                        grade = "학년"
+                        cls = "반"
+                        num = "번호"
+                    } else {
+                        grade = row.getCell(1).numericCellValue.toInt().toString() // 첫 번째 셀 (학년)
+                        cls = row.getCell(2).numericCellValue.toInt().toString()   // 두 번째 셀 (반)
+                        num = row.getCell(3).numericCellValue.toInt().toString()   // 세 번째 셀 (번호)
+                    }
 
                     // List<String> 형태로 나머지 정보를 저장
                     val additionalData = mutableListOf<String>()
-                    for (j in 3 until rowCnt) { // rowCnt + 1 (X)
-                        additionalData.add(row.getCell(j).stringCellValue)
+                    for (j in 4 until rowCnt) { // rowCnt + 1 (X)
+                        if(i==0){
+                            additionalData.add(row.getCell(j).stringCellValue)
+                        }else {
+                            additionalData.add(row.getCell(j).rawValue.toString())
+                        }
                     }
 
                     // StudentScore 객체 생성
@@ -142,70 +152,76 @@ class EvaluationService(
         // 1. 가채점 시트
         if(answerSheet != null){ // 저장 처리
             val user:UserEntity = userMapper.toEntity(userSessionHolder.getCurrentUser());
-            if(scoreSheet != null){ // 2. 성적표 // 저장 처리
+            if(scoreSheet != null) { // 2. 성적표 // 저장 처리
                 var grade: Int
                 var cls: Int
                 var num: Int
                 var result: Double
-                for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
+                for (rowIndex in 1 until scoreSheet.physicalNumberOfRows) {
                     // 추출하기
                     try {
-                        val row = answerSheet.getRow(rowIndex)
+                        val row = scoreSheet.getRow(rowIndex)
 
                         if (rowIndex == 1) {
-                            grade = Integer.parseInt(row.getCell(0).stringCellValue)
-                            cls = Integer.parseInt(row.getCell(1).stringCellValue)
-                            num = Integer.parseInt(row.getCell(2).stringCellValue)
-                            result = row.getCell(3).stringCellValue.toDouble()
+                            grade = row.getCell(0).numericCellValue.toInt()
+                            cls = row.getCell(1).numericCellValue.toInt()
+                            num = row.getCell(2).numericCellValue.toInt()
+                            result = row.getCell(3).numericCellValue
 
                             val entity = ExamResultEntity(
                                 grade = grade,
                                 cls = cls,
                                 num = num,
-                                result = result)
+                                result = result
+                            )
 
                             // mongoDB에 저장
-                            mongoTemplate.save(entity,collectionName)
-                            evaluationRepository.save(
-                                EvaluationEntity(
-                                title = collectionName,
-                                year = year,
-                                category = EvaluationType.EXAM,
-                                term = term,
-                                userEntity = user
-                            )
-                            );
+                            mongoTemplate.save(entity, collectionName)
                         }
-                    } catch (e: Throwable) { e.printStackTrace() }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
                 }
-            for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
-                var num: Int
-                var correctAnswer: Int
-                var score: Double
-                // 추출하기
-                try {
-                    val row = answerSheet.getRow(rowIndex)
+                for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
+                    var num: Int
+                    var correctAnswer: Int
+                    var score: Double
+                    // 추출하기
+                    try {
+                        val row = answerSheet.getRow(rowIndex)
 
-                    if (rowIndex == 1) {
-                        num = Integer.parseInt(row.getCell(1).stringCellValue)
-                        correctAnswer = Integer.parseInt(row.getCell(2).stringCellValue)
-                        score = row.getCell(3).stringCellValue.toDouble()
+                        num = row.getCell(0).numericCellValue.toInt()
+                        correctAnswer = row.getCell(1).numericCellValue.toInt()
+                        score = row.getCell(2).numericCellValue
 
-                        val entity = MongoAnswerEntity(null,num, correctAnswer, score)
+                        val entity = MongoAnswerEntity(num = num, correctAnswer = correctAnswer, score = score)
                         // mongoDB에 저장
-                        secondaryMongoTemplate.save(entity,collectionName)
-                        answerRepository.save(
-                            AnswerEntity(
-                            title = collectionName,
-                            year = year,
-                            term = term,
-                            userEntity = user
-                        )); }
-                    } catch (e: Throwable) { e.printStackTrace() }
-            } } else {
-                throw Exception("가채점표를 올려야 합니다.")
+                        secondaryMongoTemplate.save(entity, collectionName)
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
             }
-
+            println(user.id)
+            evaluationRepository.save(
+                EvaluationEntity(
+                    title = collectionName,
+                    year = year,
+                    category = EvaluationType.EXAM,
+                    term = term,
+                    userEntity = user
+                )
+            )
+            answerRepository.save(
+                AnswerEntity(
+                    title = collectionName,
+                    year = year,
+                    term = term,
+                    userEntity = user
+                )
+            )
+        }else {
+            throw Exception("가채점표를 올려야 합니다.")
         }
 
     }

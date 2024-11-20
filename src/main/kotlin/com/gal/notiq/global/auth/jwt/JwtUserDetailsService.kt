@@ -2,6 +2,7 @@ package com.gal.notiq.global.auth.jwt
 
 import com.gal.notiq.domain.user.domain.UserRepository
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
+import com.gal.notiq.domain.evaluation.exception.EvaluationErrorCode
 import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.global.exception.CustomException
 import org.springframework.security.core.userdetails.UserDetails

@@ -21,6 +21,7 @@ class UserMapper(
 
     override fun toEntity(domain: User): UserEntity {
         return UserEntity(
+            id = domain.id,
             username = domain.username,
             name = domain.name,
             grade = domain.grade,

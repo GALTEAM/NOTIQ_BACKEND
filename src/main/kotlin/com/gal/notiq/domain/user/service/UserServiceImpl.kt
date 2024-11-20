@@ -3,6 +3,7 @@ package com.gal.notiq.domain.user.service
 import com.gal.notiq.domain.user.domain.UserRepository
 import com.gal.notiq.domain.user.domain.entity.UserEntity
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
+import com.gal.notiq.domain.evaluation.exception.EvaluationErrorCode
 import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.domain.user.presentation.dto.request.LoginRequest
 import com.gal.notiq.domain.user.presentation.dto.request.RefreshRequest
@@ -30,7 +31,8 @@ class UserServiceImpl(
 
     @Transactional
     override fun registerUser(registerUserRequest: RegisterUserRequest): BaseResponse<Unit> {
-        if(userRepository.existsByUsername(registerUserRequest.username) || userRepository.existsByGradeAndClsAndNum(registerUserRequest.grade,registerUserRequest.cls,registerUserRequest.num)) throw CustomException(UserErrorCode.USER_ALREADY_EXIST)
+        if(userRepository.existsByUsername(registerUserRequest.username) || userRepository.existsByGradeAndClsAndNum(registerUserRequest.grade,registerUserRequest.cls,registerUserRequest.num)) throw CustomException(
+            UserErrorCode.USER_ALREADY_EXIST)
 
         userRepository.save(
             userMapper.toEntity(
@@ -46,7 +48,8 @@ class UserServiceImpl(
 
     @Transactional(readOnly = true)
     override fun loginUser(loginRequest: LoginRequest): BaseResponse<JwtInfo> {
-        val user:UserEntity = userRepository.findByUsername(loginRequest.username)?: throw CustomException(UserErrorCode.USER_NOT_FOUND)
+        val user:UserEntity = userRepository.findByUsername(loginRequest.username)?: throw CustomException(
+            UserErrorCode.USER_NOT_FOUND)
         if (!bytePasswordEncoder.matches(loginRequest.password,user.password)) throw CustomException(UserErrorCode.USER_NOT_MATCH)
         return BaseResponse(
             message = "로그인 성공",

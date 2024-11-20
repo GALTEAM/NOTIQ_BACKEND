@@ -21,4 +21,5 @@ interface EvaluationRepository: JpaRepository<EvaluationEntity, Long> {
         @Param("keyword") keyword: String?): List<EvaluationEntity>
 
     fun findAllByUserEntity(userEntity: UserEntity): List<EvaluationEntity>
+    fun existsByTitle(title: String): Boolean
 }
