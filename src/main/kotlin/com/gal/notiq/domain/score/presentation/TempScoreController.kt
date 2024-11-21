@@ -19,7 +19,7 @@ class TempScoreController(
 
     @GetMapping("") // 가채점표 리스트 반환
     @Operation(summary = "가채점 가능한 평가 리스트 반환", description = "가채점 가능한 평가 리스트 반환(authenticated)")
-    fun getTempScores(@RequestBody request: GetTempScoresRequest):BaseResponse<List<GetTempScoresResponse>>{ // 필터링 한번에 받아서 쿼리로 처리하기
+    fun getTempScores(@ModelAttribute request: GetTempScoresRequest):BaseResponse<List<GetTempScoresResponse>>{ // 필터링 한번에 받아서 쿼리로 처리하기
         return tempScoreService.getTempScores(request)
     }
 

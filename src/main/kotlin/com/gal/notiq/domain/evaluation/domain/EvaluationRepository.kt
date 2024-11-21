@@ -8,12 +8,12 @@ import org.springframework.data.repository.query.Param
 
 
 interface EvaluationRepository: JpaRepository<EvaluationEntity, Long> {
-    @Query("""
-        SELECT a FROM AnswerEntity a
+    @Query(value = """
+        SELECT * FROM tb_evaluation a 
         WHERE (:year IS NULL OR a.year = :year)
           AND (:term IS NULL OR a.term = :term)
-          AND (:keyword IS NULL OR a.title LIKE %:keyword%)
-    """)
+          AND (:keyword IS NULL OR REPLACE(LOWER(a.title),' ','') LIKE LOWER(CONCAT('%', REPLACE(:keyword,' ',''), '%')))
+    """, nativeQuery = true)
     fun findAllByYearAndTermAndKeyword(
         @Param("year") year: Int?,
         @Param("term") term: Int?,
