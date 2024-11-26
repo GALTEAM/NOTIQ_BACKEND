@@ -46,3 +46,6 @@ Caused by: java.net.ConnectException: Connection refused
 class NotiQApplication
 
 자료 : https://stackoverflow.com/questions/35415308/exception-in-monitor-thread-while-connecting-to-server-localhost27017-while-acc
+
+평가, 가채졈표 저장안됨 -> 가채점표 저장, 평가 저장 분리
+
