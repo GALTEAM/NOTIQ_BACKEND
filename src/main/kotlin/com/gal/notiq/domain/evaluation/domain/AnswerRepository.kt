@@ -18,4 +18,6 @@ interface AnswerRepository: JpaRepository<AnswerEntity, Long> {
         @Param("term") term: Int?,
         @Param("keyword") keyword: String?): List<AnswerEntity>
 
+    fun existsByTitle(title: String): Boolean
+
 }

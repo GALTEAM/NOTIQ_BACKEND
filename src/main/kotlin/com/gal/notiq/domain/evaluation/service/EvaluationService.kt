@@ -1,7 +1,6 @@
 package com.gal.notiq.domain.evaluation.service
 
 import com.gal.notiq.domain.evaluation.domain.*
-import com.gal.notiq.domain.evaluation.domain.entity.AnswerEntity
 import com.gal.notiq.domain.evaluation.domain.entity.EvaluationEntity
 import com.gal.notiq.domain.evaluation.domain.entity.mongo.*
 import com.gal.notiq.domain.evaluation.domain.enums.EvaluationType
@@ -14,12 +13,10 @@ import com.gal.notiq.domain.score.presentation.dto.response.GetMyExamResultRespo
 import com.gal.notiq.domain.score.service.TempScoreService
 import com.gal.notiq.domain.user.domain.entity.UserEntity
 import com.gal.notiq.domain.user.domain.mapper.UserMapper
-import com.gal.notiq.domain.user.exception.UserErrorCode
 import com.gal.notiq.global.auth.UserSessionHolder
 import com.gal.notiq.global.common.BaseResponse
 import com.gal.notiq.global.exception.CustomException
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -33,12 +30,11 @@ import java.util.*
 @Transactional(rollbackFor = [Exception::class])
 class EvaluationService(
     val evaluationRepository: EvaluationRepository,
-    val answerRepository: AnswerRepository,
     val userMapper: UserMapper,
     val userSessionHolder: UserSessionHolder,
     val mongoTemplate: MongoTemplate,
-    @Qualifier("secondaryMongoTemplate") private val secondaryMongoTemplate: MongoTemplate,
-    private val tempScoreService: TempScoreService,
+    val tempScoreService: TempScoreService,
+    private val answerRepository: AnswerRepository
 ) {
     fun register(request:RegisterEvaluationRequest, file:MultipartFile): BaseResponse<Unit> {
         // 1. 이미 있는 평가인지 확인
@@ -49,18 +45,14 @@ class EvaluationService(
         val term:Int = request.term
 
         // 1. 일단 if 처리
-        when(request.evaluationType){
-            EvaluationType.EXAM -> registerExam(collectionName,year,term,file);
-            EvaluationType.CONTEST -> registerContest(collectionName,year,term,file);
-            EvaluationType.ETC -> registerEtc(collectionName,year,term,file);
+        return when(request.evaluationType){
+            EvaluationType.EXAM -> registerExam(collectionName,year,term,file)
+            EvaluationType.CONTEST -> registerContest(collectionName,year,term,file)
+            EvaluationType.ETC -> registerEtc(collectionName,year,term,file)
         }
-
-        return BaseResponse(
-            message = "평가 저장 성공"
-        )
     }
 
-    private fun registerContest(collectionName: String, year: Int, term: Int, file: MultipartFile) {
+    private fun registerContest(collectionName: String, year: Int, term: Int, file: MultipartFile) : BaseResponse<Unit> {
         val workbook = XSSFWorkbook(file.inputStream)
         val sheet = workbook.getSheet("대회결과")
         val user:UserEntity = userMapper.toEntity(userSessionHolder.getCurrentUser())
@@ -90,9 +82,13 @@ class EvaluationService(
                 term = term,
                 userEntity = user)
         )
+
+        return BaseResponse(
+            message = "평가 저장 성공"
+        )
     }
 
-    private fun registerEtc(collectionName: String, year: Int, term: Int, file: MultipartFile) {
+    private fun registerEtc(collectionName: String, year: Int, term: Int, file: MultipartFile) :BaseResponse<Unit> {
         val workbook = XSSFWorkbook(file.inputStream)
         val sheet = workbook.getSheet("기타결과")
 
@@ -144,68 +140,51 @@ class EvaluationService(
                 term = term,
                 userEntity = user
             ))
+            return BaseResponse(
+                message = "평가 저장 성공"
+            )
         }
+        throw CustomException(EvaluationErrorCode.EVALUATION_NOT_FOUND)
     }
 
-    private fun registerExam(collectionName:String,year:Int,term:Int,file:MultipartFile) {
+    private fun registerExam(collectionName:String,year:Int,term:Int,file:MultipartFile) : BaseResponse<Unit> {
+        if(!answerRepository.existsByTitle(collectionName)){
+            throw CustomException(EvaluationErrorCode.ANSWER_NOT_FOUND)
+        }
+
         val workbook = XSSFWorkbook(file.inputStream)
-        val answerSheet = workbook.getSheet("가채점표");
-        val scoreSheet = workbook.getSheet("성적표");
+        val scoreSheet = workbook.getSheet("성적표")
 
         // 시트 이름으로 구분
         // 1. 가채점 시트
-        if(answerSheet != null){ // 저장 처리
+        if(scoreSheet != null){
             val user:UserEntity = userMapper.toEntity(userSessionHolder.getCurrentUser());
-            if(scoreSheet != null) { // 2. 성적표 // 저장 처리
-                var grade: Int
-                var cls: Int
-                var num: Int
-                var result: Double
-                for (rowIndex in 1 until scoreSheet.physicalNumberOfRows) {
-                    // 추출하기
-//                    try {
-                        val row = scoreSheet.getRow(rowIndex)
+            var grade: Int
+            var cls: Int
+            var num: Int
+            var result: Double
 
-                        if (rowIndex == 1) {
-                            grade = row.getCell(0).numericCellValue.toInt()
-                            cls = row.getCell(1).numericCellValue.toInt()
-                            num = row.getCell(2).numericCellValue.toInt()
-                            result = row.getCell(3).numericCellValue
+            for (rowIndex in 1 until scoreSheet.physicalNumberOfRows) {
 
-                            val entity = ExamResultEntity(
-                                grade = grade,
-                                cls = cls,
-                                num = num,
-                                result = result
-                            )
+                val row = scoreSheet.getRow(rowIndex)
 
-                            println("여기 존재")
-                            // mongoDB에 저장
-                            mongoTemplate.save(entity, collectionName)
-                            println("통과")
-                        }
-//                    } catch (e: Throwable) {
-//                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
-//                    }
-                }
-                for (rowIndex in 1 until answerSheet.physicalNumberOfRows) {
-                    var num: Int
-                    var correctAnswer: Int
-                    var score: Double
-                    // 추출하기
-                    try {
-                        val row = answerSheet.getRow(rowIndex)
+                if (rowIndex == 1) {
+                    grade = row.getCell(0).numericCellValue.toInt()
+                    cls = row.getCell(1).numericCellValue.toInt()
+                    num = row.getCell(2).numericCellValue.toInt()
+                    result = row.getCell(3).numericCellValue
 
-                        num = row.getCell(0).numericCellValue.toInt()
-                        correctAnswer = row.getCell(1).numericCellValue.toInt()
-                        score = row.getCell(2).numericCellValue
+                    val entity = ExamResultEntity(
+                        grade = grade,
+                        cls = cls,
+                        num = num,
+                        result = result
+                    )
 
-                        val entity = MongoAnswerEntity(num = num, correctAnswer = correctAnswer, score = score)
-                        // mongoDB에 저장
-                        secondaryMongoTemplate.save(entity, collectionName)
-                    } catch (e: Throwable) {
-                        throw CustomException(EvaluationErrorCode.REGISTER_FAILED)
-                    }
+                    println("여기 존재")
+                    // mongoDB에 저장
+                    mongoTemplate.save(entity, collectionName)
+                    println("통과")
                 }
             }
             evaluationRepository.save(
@@ -217,18 +196,12 @@ class EvaluationService(
                     userEntity = user
                 )
             )
-            answerRepository.save(
-                AnswerEntity(
-                    title = collectionName,
-                    year = year,
-                    term = term,
-                    userEntity = user
-                )
+            return BaseResponse(
+                message = "평가 저장 성공"
             )
-        }else {
-            throw CustomException(EvaluationErrorCode.ANSWER_NOT_FOUND) //"가채점표를 올려야 합니다."
+        } else {
+            throw CustomException(EvaluationErrorCode.SHEET_NOT_FOUND)
         }
-
     }
 
     fun getEvaluations(request:GetEvaluationsRequest): BaseResponse<List<GetEvaluationsResponse>> { // 평가 리스트 받기

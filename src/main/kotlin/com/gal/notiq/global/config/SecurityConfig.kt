@@ -51,6 +51,7 @@ class SecurityConfig (
                     .requestMatchers("/user/my").authenticated()
                     .requestMatchers("/evaluation/my").hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.POST,"/evaluation").hasAuthority("ROLE_ADMIN")
+                    .requestMatchers(HttpMethod.POST,"/answer").hasAuthority("ROLE_ADMIN")
                     .requestMatchers(HttpMethod.GET,"/evaluation").authenticated()
                     .requestMatchers("/evaluation/{id}/**").hasAuthority("ROLE_USER")
                     .requestMatchers(HttpMethod.POST,"/disagree/").hasAuthority("ROLE_USER")
