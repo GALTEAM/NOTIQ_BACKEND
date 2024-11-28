@@ -26,6 +26,12 @@ jobs:
           touch ./application.yml
           echo "${{ secrets.APPLICATION_PROD }}" > ./application.yml
 
+      - name: make fcm.json file
+        run: |
+          cd ./src/main/resources
+          touch ./galmuri-eca10-firebase-adminsdk-73ome-1c04941567.json
+          echo "${{ secrets.FCM_JSON_PROD }}" > ./galmuri-eca10-firebase-adminsdk-73ome-1c04941567.json
+
       - name: set chmod
         run: chmod +x ./gradlew
 
@@ -52,4 +58,3 @@ jobs:
             docker rmi ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
             docker pull ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
             docker run -d -p 80:8080 --name notiq ${{ secrets.DOCKER_USERNAME }}/notiq:0.0.1-SNAPSHOT
-            

@@ -26,6 +26,9 @@ class UserEntity (
     @Column
     val num: Int = 0,
 
+    @Column
+    var fcmToken: String = "",
+
     @Column(nullable = false)
     val password: String = "", // Password
 
