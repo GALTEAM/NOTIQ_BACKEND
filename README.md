@@ -47,5 +47,9 @@ class NotiQApplication
 
 자료 : https://stackoverflow.com/questions/35415308/exception-in-monitor-thread-while-connecting-to-server-localhost27017-while-acc
 
-평가, 가채졈표 저장안됨 -> 가채점표 저장, 평가 저장 분리
+에러 : 평가, 가채졈표 저장안됨 -> 가채점표 저장, 평가 저장 분리
+
+FCM으로 알람구현
+
+https://velog.io/@haden/spring-fcm-server-%EC%84%A4%EC%A0%95
 
